@@ -1,21 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace VideoRotieren
@@ -50,9 +41,11 @@ namespace VideoRotieren
             textBlock_rotate_success.Visibility = System.Windows.Visibility.Hidden;
             statusBar1.Visibility = System.Windows.Visibility.Hidden;
 
+            duration_hours = duration_mins = duration_millisecs = duration_secs = 0;
+            current_hours = current_mins = current_millisecs = current_secs = 0;
             progressBar1.Minimum = 0;
             progressBar1.Maximum = 100;
-
+            
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnProcessExit);
 
             // Tooltip für Gradzahleingabe TextBox
@@ -65,10 +58,6 @@ namespace VideoRotieren
 
         private void button_browseInputFile_Click(object sender, RoutedEventArgs e)
         {
-            tempInputFileNames.Clear();
-            tempOutputFileNames.Clear();
-            tempOutputFolder = "";
-
 
             // OpenFileDialog, mehrere Dateien auswählbar, nur Videodateien auswählbar
             OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -76,6 +65,11 @@ namespace VideoRotieren
             openFileDialog.Filter = "Videodateien (*.mp4;*.avi;*.mpg;*.mpeg;*.mkv;*.flv;*.mov;*.3gp)|*.mp4;*.avi;*.mpg;*.mpeg;*.mkv;*.flv;*.mov;*.3gp";
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
+
+                // Test, ob Dateiname eingegeben wurde.
+                // Falls ja: Lösche den (nun veralteten) Inhalt aus tempInputFileNames
+                if (openFileDialog.FileNames.Length > 0)
+                    tempInputFileNames.Clear();
 
                 // Für jeden eingegebenen Dateinamen...
                 for (int i = 0; i < openFileDialog.FileNames.Length; i++)
@@ -85,20 +79,20 @@ namespace VideoRotieren
                     Console.WriteLine("openFileDialog.FileNames.Length: " + openFileDialog.FileNames.Length);
                     Console.WriteLine("inputfilename: " + fileName);
 
-                    // Dateiname (z.B. hallo.mp4) ohne Ordner und Slashes "\"
+                    // Dateiname (z.B. video.mp4) ohne Ordner und Slashes "\"
                     String[] stringSeparators = new string[] { "\\" };
                     String[] result = fileName.Split(stringSeparators, StringSplitOptions.None);
 
                     if (!(String.IsNullOrEmpty(fileName)))
                     {
+                        
+
                         // Im Array, das die Eingabedateinamen sammelt, den Dateinamen abspeichern
                         tempInputFileNames.Enqueue(fileName);
                         label_currentFile.Content = "Datei: " + result[result.Length - 1];
                         if (openFileDialog.FileNames.Length > 1)
                             label_currentFile.Content += " + " + Convert.ToString(openFileDialog.FileNames.Length-1) + " weitere Dateien.";
 
-                        // mediaElement_displayVideo.Source = new Uri(chosenFile, UriKind.Absolute);
-                        // mediaElement_displayVideo.Play();
                     }
                 }
             }
@@ -124,23 +118,28 @@ namespace VideoRotieren
 
                     String[] stringSeparators = new string[] { "\\" };
 
-                    // Jeder Dateiname, z.B. hallo.mp4, wird um _rotiert erweitert, also hallo_rotiert.mp4
+                    // Jeder Dateiname, z.B. video.mp4, wird um _rotiert erweitert, also video_rotiert.mp4
                     // Zuerst nach Slash "\" trennen, um an den eigentlichen Dateinamen ohne Ordner zu kommen
                     String[] result = tempInputFileNames.Peek().Split(stringSeparators, StringSplitOptions.None);
                     String tmp = result[result.Length - 1];
-                    saveFileDialog.FileName = tmp.Substring(0, tmp.Length - 4) + // "hallo" (von hallo.mp4)
-                        " rotiert" + // "hallo_rotiert"
-                        tmp.Substring(tmp.Length - 4, 4); // "hallo_rotiert.mp4"
+                    saveFileDialog.FileName = tmp.Substring(0, tmp.Length - 4) + // "video" (von video.mp4)
+                        " rotiert" + // "video_rotiert"
+                        tmp.Substring(tmp.Length - 4, 4); // "video_rotiert.mp4"
 
 
                     if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
                         // User hat die Möglichkeit, die vorgeschlagenen Namen im outputFile-Array
                         // und in saveFileDialog.FileName:
-                        // hallo_rotiert.mp4, aufnahme_rotiert.mp4, usw.
+                        // video_rotiert.mp4, aufnahme_rotiert.mp4, usw.
                         // zu akzeptieren, oder einen neuen Namen einzugeben
                         if (!(String.IsNullOrEmpty(saveFileDialog.FileName)))
                         {
+
+                            // Es wurde ein (neuer) Dateispeicherort angegeben
+                            // Lösche den (nun veralteten) Speicheroert aus tempOutputFileNames
+                            tempOutputFileNames.Clear();
+
 
                             // Der Nutzer könnte den Namen gegenüber dem Vorschlag nocheinmal verändert haben
                             tempOutputFileNames.Enqueue(saveFileDialog.FileName);
@@ -157,8 +156,7 @@ namespace VideoRotieren
 
                 // Es wurde mehr als 1 Datei als Input gegeben.
                 // In diesem Fall kann der User den Namen der Ausgabedatei nicht selbst bestimmen, 
-                // sondern er muss dann einen Ordner angeben, an dem die Ausgabedateien unter ihrem
-                // Originalnamen gespeichert werden.
+                // sondern er muss dann einen Ordner angeben, an dem die Ausgabedateien gespeichert werden.
                 else
                 {
 
@@ -175,8 +173,11 @@ namespace VideoRotieren
                     {
                         if (!(String.IsNullOrEmpty(fbd.SelectedPath)))
                         {
+
                             tempOutputFolder = fbd.SelectedPath + "\\rotiert\\";
-                            Console.WriteLine("tempOutputFolder: " + tempOutputFolder);
+                            String tempOutputFolder_formatted = " [...] \\" + fbd.SelectedPath.Split('\\').Last() + "\\rotiert\\";
+
+                            label_outputFile.Content = "Ordner: " + tempOutputFolder_formatted;
                         }
                     }                
             
@@ -186,13 +187,13 @@ namespace VideoRotieren
 
         private void button_executeProcess_Click(object sender, RoutedEventArgs e)
         {
-
+            Console.WriteLine("degrees: " + degrees);
             if(tempInputFileNames == null || !tempInputFileNames.Any() || String.IsNullOrEmpty(tempInputFileNames.Peek()))
             {
                 MessageBoxResult result = System.Windows.MessageBox.Show("Bitte zuerst Eingabedatei festlegen!", "Achtung", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 return;
             }
-            if (tempOutputFileNames == null || (!tempInputFileNames.Any() && String.IsNullOrEmpty(tempOutputFolder)))
+            if (tempOutputFileNames == null || (!tempOutputFileNames.Any() && String.IsNullOrEmpty(tempOutputFolder)))
             {
                 MessageBoxResult result = System.Windows.MessageBox.Show("Bitte zuerst Ausgabedatei festlegen!", "Achtung", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 return;
@@ -202,7 +203,12 @@ namespace VideoRotieren
                 MessageBoxResult result = System.Windows.MessageBox.Show("Bitte Rotation festlegen!", "Achtung", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 return;
             }
-            if (radio_customDegrees.IsChecked == true && (degrees < 1 || degrees > 359))
+            if (radio_customDegrees.IsChecked == true && (radio_customDegrees_imUZS.IsChecked == false && radio_customDegrees_gegenUZS.IsChecked == false))
+            {
+                MessageBoxResult result = System.Windows.MessageBox.Show("Bitte festlegen in welche Richtung die Rotation erfolgen soll!", "Achtung", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+            if (radio_customDegrees.IsChecked == true && (Convert.ToInt32(textBox_customDegrees.Text) < 1 || Convert.ToInt32(textBox_customDegrees.Text) > 359))
             {
                 MessageBoxResult result = System.Windows.MessageBox.Show("Bitte einen Rotationswert zwischen 1 und 359 Grad eingeben!", "Achtung", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 return;
@@ -236,15 +242,16 @@ namespace VideoRotieren
 
             degrees = 0;
 
-            // transpose
-            // 0 = 90CounterCLockwise and Vertical Flip (default)
-            // 1 = 90Clockwise
-            // 2 = 90CounterClockwise
-            // 3 = 90Clockwise and Vertical Flip
+
             if (radio_90_mit_UZS.IsChecked == true) degrees = 90;
             else if (radio_90_gegen_UZS.IsChecked == true) degrees = -90;
             else if (radio_180.IsChecked == true) degrees = 180;
-            else if (radio_customDegrees.IsChecked == true) degrees = Convert.ToInt32(textBox_customDegrees.Text);
+            else if (radio_customDegrees.IsChecked == true)
+            {
+                degrees = Convert.ToInt32(textBox_customDegrees.Text);
+                if (radio_customDegrees_gegenUZS.IsChecked == true) degrees = 360 - degrees;
+            }
+
 
             if (inputFileNames.Count > 1)
             {
@@ -274,12 +281,6 @@ namespace VideoRotieren
             }
         }
 
-        public void hallo(String hallostring)
-        {
-            Console.WriteLine("hallo inputFileNames Number: " + inputFileNames.Count);
-            Console.WriteLine("hallo outputFileNames Number: " + outputFileNames.Count);
-            Console.WriteLine("hallo folder name: " + outputFolder);
-        }
         
         public void GetNextAvailableFilename(string filename, Queue<String> outputFileNames)
         {
@@ -290,7 +291,6 @@ namespace VideoRotieren
                     fileNameIndex += 1;
                     alternateFilename = CreateNumberedFilename(filename, fileNameIndex);
                 } while ((System.IO.File.Exists(outputFolder + alternateFilename))
-                // } while ((System.IO.File.Exists(System.IO.Path.GetDirectoryName(filename) + "\\" + alternateFilename))
                         || outputFileNames.Contains(filename));
 
                 Console.WriteLine("Filename: " + filename + " alternateFilename: " + alternateFilename);
@@ -312,6 +312,8 @@ namespace VideoRotieren
             Console.WriteLine("startNewProcess inputFileNames Number: " + inputFileNames.Count);
             Console.WriteLine("startNewProcess outputFileNames Number: " + outputFileNames.Count);
             Console.WriteLine("startNewProcess folder name: " + outputFolder);
+            Console.WriteLine("START NEW PROCESS duration_hours: " + duration_hours + "," + duration_mins + "," + duration_secs + "," + duration_millisecs);
+            Console.WriteLine("START NEW PROCESS  current_hours: " + current_hours + "," + current_mins + "," + current_secs + "," + current_millisecs);
 
             process = new Process();
             //process.StartInfo.FileName = "cmd.exe";
@@ -355,6 +357,9 @@ namespace VideoRotieren
 
             timer.Stop();
 
+            duration_hours = duration_mins = duration_millisecs = duration_secs = 0;
+            current_hours = current_mins = current_millisecs = current_secs = 0;
+
             Console.WriteLine("ProcessExitHandler inputFileNames Number: " + inputFileNames.Count);
             Console.WriteLine("ProcessExitHandler outputFileNames Number: " + outputFileNames.Count);
 
@@ -384,6 +389,7 @@ namespace VideoRotieren
                           outputFileNames.Clear();
                           outputFolder = "";
                           degrees = 0;
+                          
 
                           button_browseInputFile.IsEnabled = true;
                           button_browseOutputFile.IsEnabled = true;
@@ -422,10 +428,12 @@ namespace VideoRotieren
                         this.duration_millisecs = Convert.ToInt32(result2[2].Split('.')[1]);
                         Console.WriteLine("hours: " + this.duration_hours + ", mins: " + this.duration_mins +
                             ", secs: " + this.duration_secs + ", millisecs: " + this.duration_millisecs);
+                        Console.WriteLine("current_hours: " + current_hours + "," + current_mins + "," + current_secs + "," + current_millisecs);
                     }
                 }
 
             }
+
             if (line != null && line.StartsWith("frame="))
             {
                 String[] result = line.Split(' ');
@@ -445,6 +453,7 @@ namespace VideoRotieren
                         break;
                     }
                 }
+                Console.WriteLine("frame: " + line);
                 Console.WriteLine("time: " + time);
 
                 string duration = time.Substring(5);
@@ -455,8 +464,6 @@ namespace VideoRotieren
                 current_millisecs = Convert.ToInt32(result2[2].Split('.')[1]);
 
                 Console.WriteLine("current_hours: " + current_hours + "," + current_mins + "," + current_secs + "," + current_millisecs);
-
-
             }
 
             if (!(String.IsNullOrEmpty(line)) && (
@@ -515,7 +522,7 @@ namespace VideoRotieren
         {
             this.timer = new DispatcherTimer();
             this.timer.Tick += timer_Tick;
-            this.timer.Interval = new System.TimeSpan(0, 0, 1);
+            this.timer.Interval = new System.TimeSpan(0, 0, 0, 0, 500);
             this.timer.Tick += new System.EventHandler(this.timer_Tick);
         }
 
@@ -535,26 +542,21 @@ namespace VideoRotieren
 
         private void radio_customDegrees_Changed(object sender, RoutedEventArgs e)
         {
-            //if (radio_customDegrees.IsChecked.HasValue)
-            //{
-                textBox_customDegrees.IsEnabled = (bool)radio_customDegrees.IsChecked;
-                radio_customDegrees_imUZS.IsEnabled = (bool)radio_customDegrees.IsChecked;
-                radio_customDegrees_gegenUZS.IsEnabled = (bool)radio_customDegrees.IsChecked;
+             textBox_customDegrees.IsEnabled = (bool)radio_customDegrees.IsChecked;
+             radio_customDegrees_imUZS.IsEnabled = (bool)radio_customDegrees.IsChecked;
+             radio_customDegrees_gegenUZS.IsEnabled = (bool)radio_customDegrees.IsChecked;
 
-                tooltip_textBox_customDegrees.IsOpen = false;
-            //}
-
+             tooltip_textBox_customDegrees.IsOpen = false;
         }
 
         private void textBox_customDegrees_previewTextInput(object sender, TextCompositionEventArgs e)
         {
             // nur Zahlen,+ und - erlaubt
-            Regex regex = new Regex("[a-zA-Z*/_:;.,<>|!\"§$% &/ () =?`´{}\\^°~#'@²³+-]"); //regex that matches disallowed text
+            Regex regex = new Regex("[a-zA-Z*/_:;.,<>|!\"§$% &/ () =?`´{}\\^°~#'@²³+-]");
             e.Handled = regex.IsMatch(e.Text);
             Console.WriteLine("handled: " + e.Handled + ", getType: " + e.Text.GetType());      
         }
 
-        // TextChanged="textBox_customDegrees_TextChanged"
         private void textBox_customDegrees_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
             if (!string.IsNullOrWhiteSpace(textBox_customDegrees.Text))
@@ -578,18 +580,6 @@ namespace VideoRotieren
     a copy "C:\Users\Steffen\Downloads\gedreht3.mp4"*/
         //}
 
-
     }
-
 }
 
-
-
-/*
-* zu tun: wenn zwei Dateien (oder mehrere?) eingegeben werden, sind die Degrees beim 2. = 0
-*
-* wenn mehrere Dateien eingegeben werden, zeigt die Fortschrittsbar manchmal 100% an, wenn eine Datei
-* fertig ist, aber auch dann wenn noch nicht alle Dateien fertig sind. Idee: jeden Prozess in 
-* startNewProcess() in ein Array speichern und bei der Timerausgabe immer alle Prozesse auf ihre
-* currentTime checken und dann das maximale nehmen.
-*/

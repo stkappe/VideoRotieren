@@ -38,12 +38,12 @@
         <Label x:Name="label_howTurnFile" Content="Wie soll das Video gedreht werden?" HorizontalAlignment="Left" Margin="37,239,0,-18" VerticalAlignment="Top" RenderTransformOrigin="-1.263,0.423" FontSize="16"/>
         <Label x:Name="label_currentFile" Content="Ausgewählte Datei:&#xD;&#xA;" HorizontalAlignment="Left" Margin="37,108,0,0" VerticalAlignment="Top" Width="316" Height="31" RenderTransformOrigin="0.513,1.419"/>
         <Button x:Name="button_executeProcess" Content="Start!" HorizontalAlignment="Left" Height="43" Margin="36,413,0,-204" VerticalAlignment="Top" Width="123" Click="button_executeProcess_Click"/>
-        <StatusBar x:Name="statusBar1" HorizontalAlignment="Left" Height="41" Margin="36,468,0,-257" VerticalAlignment="Top" Width="355" Background="white">
-            <TextBlock x:Name="statusBar_textBlock_progessText" TextWrapping="Wrap" Width="64"><Run Text="For"/><Run Text="t"/><Run Text="schritt:"/></TextBlock>
+        <StatusBar x:Name="statusBar1" HorizontalAlignment="Left" Height="41" Margin="36,467,0,-256" VerticalAlignment="Top" Width="355" Background="white">
+            <TextBlock x:Name="statusBar_textBlock_progessText" TextWrapping="Wrap" Width="64"><Run Text="Fortschritt:"/></TextBlock>
             <ProgressBar x:Name="progressBar1" Height="24" Width="173"/>
             <TextBlock x:Name="statusBar_textBlock_progressPercent" TextWrapping="Wrap" Text="0%" Width="74" Height="22"/>
         </StatusBar>
-        <TextBlock x:Name="textBlock_rotate_success" HorizontalAlignment="Left" Margin="41,480,0,-244" TextWrapping="Wrap" VerticalAlignment="Top" Width="145"><Run Text="Video erf"/><Run Text="olgreich rotiert!"/></TextBlock>
+        <TextBlock x:Name="textBlock_rotate_success" HorizontalAlignment="Left" Margin="36,479,0,-243" TextWrapping="Wrap" VerticalAlignment="Top" Width="146"><Run Text="Video erfolgreich rotiert!"/></TextBlock>
         <Label x:Name="label_outputFile" Content="Ausgewählte Datei:" HorizontalAlignment="Left" Margin="37,197,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.325,0.423" Width="316"/>
         <Label x:Name="label2" Content="Speicherort des Ergebnisvideos" HorizontalAlignment="Left" Margin="37,157,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.579,0.154" Height="35"/>
         <Button x:Name="button_browseOutputFile" Content="Durchsuchen..." HorizontalAlignment="Left" Margin="215,159,0,0" VerticalAlignment="Top" Width="99" Height="33"  Click="button_browseOutputFile_Click"/>
